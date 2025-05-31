@@ -9,10 +9,13 @@ import org.mockito.Mockito;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TccAnnotationProcessorTest {
 
@@ -21,6 +24,21 @@ public class TccAnnotationProcessorTest {
     @BeforeEach
     public void setUp() {
         processor = new TccAnnotationProcessor();
+        clearStaticFields();
+    }
+
+    private void clearStaticFields() {
+        try {
+            Field proxiedField = TccAnnotationProcessor.class.getDeclaredField("PROXIED_SET");
+            proxiedField.setAccessible(true);
+            ((Set<String>) proxiedField.get(null)).clear();
+
+            Field annotationsField = TccAnnotationProcessor.class.getDeclaredField("ANNOTATIONS");
+            annotationsField.setAccessible(true);
+            ((java.util.List<Class<? extends Annotation>>) annotationsField.get(null)).clear();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @interface MockReference {
@@ -35,6 +53,9 @@ public class TccAnnotationProcessorTest {
     static class TestBean {
         @MockReference
         public MockTccService tccService = new MockTccService();
+
+        @MockReference
+        public MockTccService nullService = null;
     }
 
     @Test
@@ -45,11 +66,11 @@ public class TccAnnotationProcessorTest {
         Object originalValue = field.get(bean);
 
         try (MockedStatic<ProxyUtil> mockedStatic = Mockito.mockStatic(ProxyUtil.class)) {
-            mockedStatic.when(() -> ProxyUtil.createProxy(new MockTccService(), "testBean"))
+            mockedStatic.when(() -> ProxyUtil.createProxy(bean, "testBean"))
                     .thenAnswer(invocation -> {
                         Object arg = invocation.getArgument(0);
-                        if (arg instanceof MockTccService) {
-                            return Mockito.spy((MockTccService) arg);
+                        if (arg instanceof TestBean) {
+                            return Mockito.spy(new MockTccService());
                         }
                         return arg;
                     });
@@ -58,21 +79,52 @@ public class TccAnnotationProcessorTest {
         }
 
         Object newValue = field.get(bean);
+        assertNotEquals(originalValue, newValue, "Proxy should replace original field");
+    }
 
-        assertNotEquals(originalValue, newValue, "The proxy object should replace the original field object");
+    @Test
+    public void testAddTccAdviseFieldValueNull() throws Exception {
+        TestBean bean = new TestBean();
+        Field nullField = TestBean.class.getField("nullService");
+        // 应该安全返回，不抛异常
+        processor.addTccAdvise(bean, "testBean", nullField, MockTccService.class);
+        assertNull(nullField.get(bean));
+    }
+
+    @Test
+    public void testProcessWithNullAnnotation() throws Exception {
+        processor.process(new TestBean(), "testBean", null);
+        Field proxiedField = TccAnnotationProcessor.class.getDeclaredField("PROXIED_SET");
+        proxiedField.setAccessible(true);
+        Set<String> proxied = (Set<String>) proxiedField.get(null);
+        assertTrue(proxied.isEmpty());
+    }
+
+    @Test
+    public void testProcessWhenAlreadyProxied() throws Exception {
+        Field proxiedField = TccAnnotationProcessor.class.getDeclaredField("PROXIED_SET");
+        proxiedField.setAccessible(true);
+        Set<String> proxied = (Set<String>) proxiedField.get(null);
+        proxied.add("testBean");
+
+        processor.process(new TestBean(), "testBean", MockReference.class);
+        assertTrue(proxied.contains("testBean"));
     }
 
     @Test
     public void testProcessFieldWithAnnotation() throws Exception {
         Field annotationsField = TccAnnotationProcessor.class.getDeclaredField("ANNOTATIONS");
         annotationsField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        java.util.List<Class<? extends Annotation>> annotations =
-                (java.util.List<Class<? extends Annotation>>) annotationsField.get(null);
-        annotations.add(MockReference.class);
+        ((java.util.List<Class<? extends Annotation>>) annotationsField.get(null)).add(MockReference.class);
 
         TestBean bean = new TestBean();
-        processor.postProcessBeforeInitialization(bean, "testBean");
+
+        try (MockedStatic<ProxyUtil> mockedStatic = Mockito.mockStatic(ProxyUtil.class)) {
+            mockedStatic.when(() -> ProxyUtil.createProxy(bean, "testBean"))
+                    .thenReturn(Mockito.spy(new MockTccService()));
+
+            processor.postProcessBeforeInitialization(bean, "testBean");
+        }
 
         Field proxiedField = TccAnnotationProcessor.class.getDeclaredField("PROXIED_SET");
         proxiedField.setAccessible(true);
@@ -81,4 +133,23 @@ public class TccAnnotationProcessorTest {
         assertTrue(proxied.contains("testBean"));
     }
 
+    @Test
+    public void testLoadAnnotationWithReflection() throws Exception {
+        Method loadAnnotationMethod = TccAnnotationProcessor.class.getDeclaredMethod("loadAnnotation", String.class);
+        loadAnnotationMethod.setAccessible(true);
+
+        Class<?> annotationClass = (Class<?>) loadAnnotationMethod.invoke(null, "java.lang.Override");
+        assertNotNull(annotationClass);
+
+        Object nullClass = loadAnnotationMethod.invoke(null, "non.existing.AnnotationClass");
+        assertNull(nullClass);
+    }
+
+
+    @Test
+    public void testPostProcessAfterInitializationReturnsBean() {
+        TestBean bean = new TestBean();
+        Object result = processor.postProcessAfterInitialization(bean, "testBean");
+        assertSame(bean, result);
+    }
 }
