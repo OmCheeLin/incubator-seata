@@ -80,7 +80,6 @@ class ChannelEventHandlerIntegrationTest {
 
     @BeforeAll
     static void setupClass() throws InterruptedException, IOException {
-        SERVER_PORT = findAvailablePort();
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup();
 
@@ -95,19 +94,20 @@ class ChannelEventHandlerIntegrationTest {
                 }
             });
 
-        serverChannel = serverBootstrap.bind(SERVER_PORT).sync().channel();
+        serverChannel = serverBootstrap.bind(0).sync().channel();
+        SERVER_PORT = ((InetSocketAddress) serverChannel.localAddress()).getPort();
     }
 
     @AfterAll
     static void tearDownClass() {
         if (serverChannel != null) {
-            serverChannel.close();
+            serverChannel.close().syncUninterruptibly();
         }
         if (bossGroup != null) {
-            bossGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully().syncUninterruptibly();
         }
         if (workerGroup != null) {
-            workerGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully().syncUninterruptibly();
         }
     }
 
@@ -284,9 +284,4 @@ class ChannelEventHandlerIntegrationTest {
         return channels;
     }
 
-    private static int findAvailablePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        }
-    }
 }

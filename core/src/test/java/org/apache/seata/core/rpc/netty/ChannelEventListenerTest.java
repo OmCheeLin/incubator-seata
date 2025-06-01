@@ -17,6 +17,7 @@
 package org.apache.seata.core.rpc.netty;
 
 import io.netty.channel.Channel;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,8 +34,7 @@ class ChannelEventListenerTest {
 
     private AbstractNettyRemotingClient client;
 
-    @Mock
-    private Channel channel;
+    private EmbeddedChannel channel;
 
     private TestChannelEventListener testListener;
 
@@ -43,6 +43,7 @@ class ChannelEventListenerTest {
         client = TmNettyRemotingClient.getInstance();
         testListener = new TestChannelEventListener();
         client.registerChannelEventListener(testListener);
+        channel = new EmbeddedChannel();
     }
 
     @Test
