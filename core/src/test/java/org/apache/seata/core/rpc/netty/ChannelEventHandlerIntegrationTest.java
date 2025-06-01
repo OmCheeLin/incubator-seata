@@ -35,7 +35,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.GlobalEventExecutor;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ChannelEventHandlerIntegrationTest {
 
-    private static final int SERVER_PORT = 8091;
+    private static int SERVER_PORT;
     private static final String SERVER_HOST = "127.0.0.1";
     private static final int TIMEOUT_SECONDS = 5;
 
@@ -76,7 +79,8 @@ class ChannelEventHandlerIntegrationTest {
     private CountDownLatch idleEventLatch;
 
     @BeforeAll
-    static void setupClass() throws InterruptedException {
+    static void setupClass() throws InterruptedException, IOException {
+        SERVER_PORT = findAvailablePort();
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup();
 
@@ -278,5 +282,11 @@ class ChannelEventHandlerIntegrationTest {
             }
         }
         return channels;
+    }
+
+    private static int findAvailablePort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
     }
 }
