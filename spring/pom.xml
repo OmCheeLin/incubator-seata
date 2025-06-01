@@ -31,6 +31,10 @@
     <name>seata-spring ${project.version}</name>
     <description>spring for Seata built with Maven</description>
 
+    <properties>
+        <logcaptor.version>2.11.0</logcaptor.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -79,6 +83,12 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.hakky54</groupId>
+            <artifactId>logcaptor</artifactId>
+            <version>${logcaptor.version}</version>
             <scope>test</scope>
         </dependency>
 
