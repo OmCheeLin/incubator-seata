@@ -47,7 +47,7 @@ public class StoreUtil {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
