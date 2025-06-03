@@ -16,14 +16,14 @@
 #
 name: "Publish Docker Image"
 
-on:
-  push:
-    branches: [ snapshot, "*.*.*" ]
-    #tags: [ "*" ]
-
-  #This schedule only takes effect in the default branch
-  schedule:
-    - cron: '0 16 * * *' #GMT+0
+#on:
+#  push:
+#    branches: [ snapshot, "*.*.*" ]
+#    #tags: [ "*" ]
+#
+#  #This schedule only takes effect in the default branch
+#  schedule:
+#    - cron: '0 16 * * *' #GMT+0
 
 jobs:
   # job 1

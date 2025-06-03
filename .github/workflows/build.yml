@@ -18,9 +18,11 @@ name: "build"
 
 on:
   push:
-    branches: [ 2.x, develop, master ]
+#    branches: [ 2.x, develop, master ]
+    branches: ['*']
   pull_request:
-    branches: [ 2.x, develop, master ]
+#    branches: [ 2.x, develop, master ]
+    branches: ['*']
     types: [opened, reopened, synchronize]
     paths-ignore:
       - '**.md'

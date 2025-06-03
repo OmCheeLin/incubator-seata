@@ -16,7 +16,8 @@
 #
 name: "Publish OSSRH"
 
-on: false
+#on:
+#  workflow_dispatch:
 #  push:
 #    branches: [ develop, 2.x, snapshot, "*.*.*" ]
 
