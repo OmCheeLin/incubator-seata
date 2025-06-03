@@ -78,18 +78,24 @@ jobs:
          restore-keys: |
            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
            ${{ runner.os }}-maven-
+
+      - name: "Step A: Build seata-namingserver first (serial)"
+        run: |
+            ./mvnw -T 1C -pl seata-namingserver -am clean install \  
+                   -DskipTests -e -B \
+                   -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn;
       # step 6.1
       - name: "Test, Check style, Check PMD, Check license with Maven and Java8"
         if: matrix.java == '8'
         run: |
-          ./mvnw -T 4C clean test \
+          ./mvnw -T 4C -pl '!seata-namingserver' clean test \
                  -Dcheckstyle.skip=false -Dpmd.skip=false -Dlicense.skip=false -DredisCaseEnabled=true \
                  -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn;
       # step 6.2
       - name: "Test with Maven and Java${{ matrix.java }}"
         if: matrix.java != '8'
         run: |
-          ./mvnw -T 4C clean test \
+          ./mvnw -T 4C -pl '!seata-namingserver' clean test \
                  -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn;
       # step 7
       - name: "Save local maven repository cache"
