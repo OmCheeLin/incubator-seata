@@ -85,7 +85,7 @@ public class FileSessionManagerTest {
         try {
             EnhancedServiceLoader.unloadAll();
             sessionManagerList =
-                Arrays.asList(new FileSessionManager(UUID.randomUUID()+"root.data", "."), new FileSessionManager("test", null));
+                Arrays.asList(new FileSessionManager(UUID.randomUUID() + "root.data", "."), new FileSessionManager("test", null));
         } catch (IOException e) {
             e.printStackTrace();
         }
