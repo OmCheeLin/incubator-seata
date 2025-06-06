@@ -16,7 +16,10 @@
  */
 package org.apache.seata.spring.tcc;
 
-import nl.altindag.log.LogCaptor;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.apache.seata.integration.tx.api.util.ProxyUtil;
 import org.apache.seata.rm.tcc.api.TwoPhaseBusinessAction;
 import org.junit.jupiter.api.AfterEach;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -31,6 +35,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -38,15 +43,19 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TccAnnotationProcessorTest {
-    private LogCaptor logCaptor;
+    private ListAppender<ILoggingEvent> listAppender;
     private TccAnnotationProcessor processor;
     private Set<String> proxied;
     private List<Class<? extends Annotation>> annotations;
 
     @BeforeEach
     public void setUp() throws NoSuchFieldException, IllegalAccessException {
-        logCaptor = LogCaptor.forClass(TccAnnotationProcessor.class);
         processor = new TccAnnotationProcessor();
+
+        Logger logger = (Logger) LoggerFactory.getLogger(TccAnnotationProcessor.class);
+        listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
 
         Field proxiedField = TccAnnotationProcessor.class.getDeclaredField("PROXIED_SET");
         proxiedField.setAccessible(true);
@@ -59,7 +68,8 @@ public class TccAnnotationProcessorTest {
 
     @AfterEach
     public void tearDown() {
-        logCaptor.clearLogs();
+        listAppender.stop();
+        listAppender.list.clear();
         proxied.clear();
         annotations.clear();
     }
@@ -102,9 +112,10 @@ public class TccAnnotationProcessorTest {
 
         Object newValue = field.get(bean);
         assertNotEquals(originalValue, newValue, "Proxy should replace original field");
-        List<String> logs = logCaptor.getInfoLogs();
         String expectedLog = String.format("Bean[%s] with name [%s] would use proxy", bean.getClass().getName(), "tccService");
-        assertTrue(logs.contains(expectedLog), "Logs should contain exact proxy injection info: " + expectedLog);
+        boolean containsLog = listAppender.list.stream()
+                .anyMatch(event -> event.getFormattedMessage().equals(expectedLog));
+        assertTrue(containsLog, "Logs should contain exact proxy injection info: " + expectedLog);
     }
 
     @Test
@@ -113,8 +124,9 @@ public class TccAnnotationProcessorTest {
         Field nullField = TestBean.class.getField("nullService");
         processor.addTccAdvise(bean, "testBean", nullField, MockTccService.class);
         assertNull(nullField.get(bean));
-        List<String> logs = logCaptor.getInfoLogs();
-        assertTrue(logs.isEmpty(), "No logs should be printed when field value is null");
+        boolean hasLogs = listAppender.list.stream()
+                .anyMatch(event -> event.getLevel() == Level.INFO);
+        assertFalse(hasLogs, "No logs should be printed when field value is null");
     }
 
     @Test
