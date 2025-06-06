@@ -124,9 +124,8 @@ public class TccAnnotationProcessorTest {
         Field nullField = TestBean.class.getField("nullService");
         processor.addTccAdvise(bean, "testBean", nullField, MockTccService.class);
         assertNull(nullField.get(bean));
-        boolean hasLogs = listAppender.list.stream()
-                .anyMatch(event -> event.getLevel() == Level.INFO);
-        assertFalse(hasLogs, "No logs should be printed when field value is null");
+        boolean noLogsPrinted = listAppender.list.isEmpty();
+        assertTrue(noLogsPrinted, "No logs should be printed when field value is null");
     }
 
     @Test
