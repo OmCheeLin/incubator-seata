@@ -70,5 +70,5 @@ jobs:
               title: `Flaky tests detected for Java ${{ matrix.java }}`,
               body: body,
             });
-          env:
-            FLAKY_TESTS: ${{ steps.parse_failed_tests.outputs.flaky_tests }}
+        env:
+          FLAKY_TESTS: ${{ steps.parse_failed_tests.outputs.flaky_tests }}
