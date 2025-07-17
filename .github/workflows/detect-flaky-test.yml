@@ -54,7 +54,7 @@ jobs:
       - name: Parse failed tests
         id: parse_failed_tests
         run: |
-          output=$(python3 .github/scripts/parse_failed_tests.py reports-1-${{ matrix.java }} reports-2-${{ matrix.java }})
+          output=$(python3 .github/workflows/parse_failed_tests.py reports-1-${{ matrix.java }} reports-2-${{ matrix.java }})
           echo "::set-output name=flaky_tests::$output"
       - name: Create GitHub issue for flaky tests
         if: steps.parse_failed_tests.outputs.flaky_tests != '[]'
