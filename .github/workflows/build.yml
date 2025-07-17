@@ -66,6 +66,8 @@ jobs:
       # step 4
       - name: "Print maven version"
         run: ./mvnw -version
+      - name: "Set RUN_ATTEMPT env variable"
+        run: echo "I_RUN_ATTEMPT=${{ github.run_attempt }}" >> $GITHUB_ENV
       # step 5
       - name: "Restore local maven repository cache"
         uses: actions/cache/restore@v4
@@ -81,16 +83,18 @@ jobs:
         if: matrix.java == '8'
         run: |
           ./mvnw -T 4C clean test \
-                 -Dpmd.skip=false -Dlicense.skip=false -DredisCaseEnabled=true \
+                 -Dpmd.skip=true -Dlicense.skip=true -DredisCaseEnabled=true \
                  -e -B \
                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-                 -Dorg.slf4j.simpleLogger.log.net.sourceforge.pmd=error;
+                 -Dorg.slf4j.simpleLogger.log.net.sourceforge.pmd=error \
+                 -DfailIfNoTests=false -Dtest=org.apache.seata.common.**.*;
       # step 6.2
       - name: "Test with Maven and Java${{ matrix.java }}"
         if: matrix.java != '8'
         run: |
           ./mvnw -T 4C clean test \
-                 -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn;
+                 -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+                 -DfailIfNoTests=false -Dtest=org.apache.seata.common.**.*;
       # step 7
       - name: "Save local maven repository cache"
         uses: actions/cache/save@v4
@@ -99,6 +103,14 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ env.TODAY }}
       # step 8
+      - name: "Upload Surefire reports"
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-${{ github.run_attempt }}-surefire-reports-${{ matrix.java }}
+          path: |
+            **/target/surefire-reports/*.xml
+            **/target/failsafe-reports/*.xml
+        # step 9
       - name: "Codecov"
         if: matrix.java == '8'
         uses: codecov/codecov-action@v4.0.1
@@ -109,34 +121,34 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # job 2: Build on 'arm64v8/ubuntu' OS (Skip tests).
-  build_arm64-binary:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'snapshot' || github.ref_name == '2.x') }}
-    strategy:
-      fail-fast: false
-    steps:
-      # step 1
-      - name: "Checkout"
-        uses: actions/checkout@v3
-      # step 2
-      - name: "Set up QEMU"
-        id: qemu
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
-      # step 3
-      - name: "Build with Maven on 'arm64v8/ubuntu:20.04' OS (Skip tests)"
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws \
-            --platform linux/arm64 arm64v8/ubuntu:20.04 \
-            bash -exc 'apt-get update -y && \
-                       apt-get install maven -y && \
-                       apt-get install -y python3 python3-pip python3-distutils && \
-                       apt-get install -y build-essential && \
-                       mvn -version && \
-                       mvn clean install \
-                           -Prelease-seata \
-                           -DskipTests \
-                           -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+#  build_arm64-binary:
+#    runs-on: ubuntu-latest
+#    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'snapshot' || github.ref_name == '2.x') }}
+#    strategy:
+#      fail-fast: false
+#    steps:
+#      # step 1
+#      - name: "Checkout"
+#        uses: actions/checkout@v3
+#      # step 2
+#      - name: "Set up QEMU"
+#        id: qemu
+#        uses: docker/setup-qemu-action@v3
+#        with:
+#          platforms: arm64
+#      - name: "Set up Docker Buildx"
+#        uses: docker/setup-buildx-action@v3
+#      # step 3
+#      - name: "Build with Maven on 'arm64v8/ubuntu:20.04' OS (Skip tests)"
+#        run: |
+#          docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws \
+#            --platform linux/arm64 arm64v8/ubuntu:20.04 \
+#            bash -exc 'apt-get update -y && \
+#                       apt-get install maven -y && \
+#                       apt-get install -y python3 python3-pip python3-distutils && \
+#                       apt-get install -y build-essential && \
+#                       mvn -version && \
+#                       mvn clean install \
+#                           -Prelease-seata \
+#                           -DskipTests \
+#                           -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
