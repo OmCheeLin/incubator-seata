@@ -18,7 +18,7 @@ name: Detect flaky Test
 
 on:
   workflow_run:
-    workflows: ["Rerun build"]
+    workflows: ["build"]
     types:
       - completed
 
