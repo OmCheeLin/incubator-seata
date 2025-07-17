@@ -87,14 +87,14 @@ jobs:
                  -e -B \
                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
                  -Dorg.slf4j.simpleLogger.log.net.sourceforge.pmd=error \
-                 -Dtest=org.apache.seata.flaky.FlakyTest;
+                 -DfailIfNoTests=false -Dtest=org.apache.seata.flaky.FlakyTest;
       # step 6.2
       - name: "Test with Maven and Java${{ matrix.java }}"
         if: matrix.java != '8'
         run: |
           ./mvnw -T 4C clean test \
                  -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-                 -Dtest=org.apache.seata.flaky.FlakyTest;
+                 -DfailIfNoTests=false -Dtest=org.apache.seata.flaky.FlakyTest;
       # step 7
       - name: "Save local maven repository cache"
         uses: actions/cache/save@v4
