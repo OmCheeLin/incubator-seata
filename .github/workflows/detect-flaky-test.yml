@@ -33,18 +33,18 @@ jobs:
       matrix:
         java: [ 8, 17, 21 ]
     steps:
-      # step 1
-      - name: "Download test reports artifact for run 1"
-        uses: actions/download-artifact@v4
-        with:
-          name: run-1-surefire-reports-${{ matrix.java }}
-          path: reports-1-${{ matrix.java }}
       # step 2
       - name: "Download test reports artifact for run 2"
         uses: actions/download-artifact@v4
         with:
           name: run-2-surefire-reports-${{ matrix.java }}
           path: reports-2-${{ matrix.java }}
+      # step 1
+      - name: "Download test reports artifact for run 1"
+        uses: actions/download-artifact@v4
+        with:
+          name: run-1-surefire-reports-${{ matrix.java }}
+          path: reports-1-${{ matrix.java }}
       # step 3
       - name: "Use Python 3.x"
         uses: actions/setup-python@v2
