@@ -34,6 +34,9 @@ jobs:
         java: [ 8, 17, 21 ]
     steps:
       # step 1
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      # step 2
       - name: Download artifacts for both runs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
