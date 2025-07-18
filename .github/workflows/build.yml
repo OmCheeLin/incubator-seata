@@ -104,6 +104,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ env.TODAY }}
       # step 8
       - name: "Upload Surefire reports"
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: run-${{ github.run_attempt }}-surefire-reports-${{ matrix.java }}
