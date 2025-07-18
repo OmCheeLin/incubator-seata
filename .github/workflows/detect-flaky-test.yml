@@ -43,7 +43,7 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
           JAVA_VERSION: ${{ matrix.java }}
         run: |
-          download_artifact() {
+          download_artifact() { 
             ARTIFACT_NAME=$1
             OUTPUT_DIR=$2
 
@@ -76,7 +76,7 @@ jobs:
         id: parse_failed_tests
         run: |
           output=$(python3 .github/scripts/parse_failed_tests.py reports-1-${{ matrix.java }} reports-2-${{ matrix.java }})
-          echo "::set-output name=flaky_tests::$output"
+          echo "flaky_tests=$output" >> "$GITHUB_OUTPUT"
       - name: Create GitHub issue for flaky tests
         if: steps.parse_failed_tests.outputs.flaky_tests != '[]'
         uses: actions/github-script@v6
