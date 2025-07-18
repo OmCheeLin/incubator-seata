@@ -90,6 +90,7 @@ jobs:
               repo: context.repo.repo,
               title: `Flaky tests detected for Java ${{ matrix.java }}`,
               body: body,
+              labels: ['flaky-test'],
             });
         env:
           FLAKY_TESTS: ${{ steps.parse_failed_tests.outputs.flaky_tests }}
