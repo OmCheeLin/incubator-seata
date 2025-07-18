@@ -34,53 +34,35 @@ jobs:
         java: [ 8, 17, 21 ]
     steps:
       # step 1
-      - name: Download artifact run-1-surefire-reports-${{ matrix.java }}
+      - name: Download artifacts for both runs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.workflow_run.id }}
-          ARTIFACT_NAME: run-1-surefire-reports-${{ matrix.java }}
-          OUTPUT_DIR: reports-1-${{ matrix.java }}
+          JAVA_VERSION: ${{ matrix.java }}
         run: |
-          echo "Fetching artifacts for workflow run ID: $RUN_ID"
-          artifacts_url="https://api.github.com/repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts"
+          download_artifact() {
+            ARTIFACT_NAME=$1
+            OUTPUT_DIR=$2
 
-          # get download url
-          artifact_url=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $artifacts_url \
-            | jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name) | .archive_download_url')
+            echo "Fetching artifacts for workflow run ID: $RUN_ID"
+            artifacts_url="https://api.github.com/repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts"
 
-          if [ -z "$artifact_url" ]; then
-            echo "❌ Artifact not found: $ARTIFACT_NAME"
-            exit 1
-          fi
+            artifact_url=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $artifacts_url \
+              | jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name) | .archive_download_url')
 
-          echo "✅ Found artifact: $ARTIFACT_NAME"
-          curl -L -H "Authorization: token $GITHUB_TOKEN" "$artifact_url" -o artifact.zip
-          mkdir -p "$OUTPUT_DIR"
-          unzip artifact.zip -d "$OUTPUT_DIR"
-      # step 2
-      - name: Download artifact run-2-surefire-reports-${{ matrix.java }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          ARTIFACT_NAME: run-2-surefire-reports-${{ matrix.java }}
-          OUTPUT_DIR: reports-1-${{ matrix.java }}
-        run: |
-          echo "Fetching artifacts for workflow run ID: $RUN_ID"
-          artifacts_url="https://api.github.com/repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts"
+            if [ -z "$artifact_url" ]; then
+              echo "❌ Artifact not found: $ARTIFACT_NAME"
+              exit 1
+            fi
 
-          # get download url
-          artifact_url=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $artifacts_url \
-            | jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name) | .archive_download_url')
+            echo "✅ Found artifact: $ARTIFACT_NAME"
+            curl -L -H "Authorization: token $GITHUB_TOKEN" "$artifact_url" -o artifact.zip
+            mkdir -p "$OUTPUT_DIR"
+            unzip artifact.zip -d "$OUTPUT_DIR"
+          }
 
-          if [ -z "$artifact_url" ]; then
-            echo "❌ Artifact not found: $ARTIFACT_NAME"
-            exit 1
-          fi
-
-          echo "✅ Found artifact: $ARTIFACT_NAME"
-          curl -L -H "Authorization: token $GITHUB_TOKEN" "$artifact_url" -o artifact.zip
-          mkdir -p "$OUTPUT_DIR"
-          unzip artifact.zip -d "$OUTPUT_DIR"
+          download_artifact "run-1-surefire-reports-$JAVA_VERSION" "reports-1-$JAVA_VERSION"
+          download_artifact "run-2-surefire-reports-$JAVA_VERSION" "reports-2-$JAVA_VERSION"
       # step 3
       - name: "Use Python 3.x"
         uses: actions/setup-python@v2
