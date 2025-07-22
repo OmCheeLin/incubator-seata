@@ -73,11 +73,11 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-maven-repository
         with:
-         path: ~/.m2/repository
-         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ env.TODAY }}
-         restore-keys: |
-           ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-           ${{ runner.os }}-maven-
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ env.TODAY }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+            ${{ runner.os }}-maven-
       # step 6.1
       - name: "Test, Check PMD, Check license with Maven and Java8"
         if: matrix.java == '8'
@@ -86,15 +86,13 @@ jobs:
                  -Dpmd.skip=true -Dlicense.skip=true -DredisCaseEnabled=true \
                  -e -B \
                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-                 -Dorg.slf4j.simpleLogger.log.net.sourceforge.pmd=error \
-                 -DfailIfNoTests=false -Dtest=org.apache.seata.common.**.*;
+                 -Dorg.slf4j.simpleLogger.log.net.sourceforge.pmd=error;
       # step 6.2
       - name: "Test with Maven and Java${{ matrix.java }}"
         if: matrix.java != '8'
         run: |
           ./mvnw -T 4C clean test \
-                 -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-                 -DfailIfNoTests=false -Dtest=org.apache.seata.common.**.*;
+                 -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn;
       # step 7
       - name: "Save local maven repository cache"
         uses: actions/cache/save@v4
@@ -122,34 +120,34 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # job 2: Build on 'arm64v8/ubuntu' OS (Skip tests).
-#  build_arm64-binary:
-#    runs-on: ubuntu-latest
-#    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'snapshot' || github.ref_name == '2.x') }}
-#    strategy:
-#      fail-fast: false
-#    steps:
-#      # step 1
-#      - name: "Checkout"
-#        uses: actions/checkout@v3
-#      # step 2
-#      - name: "Set up QEMU"
-#        id: qemu
-#        uses: docker/setup-qemu-action@v3
-#        with:
-#          platforms: arm64
-#      - name: "Set up Docker Buildx"
-#        uses: docker/setup-buildx-action@v3
-#      # step 3
-#      - name: "Build with Maven on 'arm64v8/ubuntu:20.04' OS (Skip tests)"
-#        run: |
-#          docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws \
-#            --platform linux/arm64 arm64v8/ubuntu:20.04 \
-#            bash -exc 'apt-get update -y && \
-#                       apt-get install maven -y && \
-#                       apt-get install -y python3 python3-pip python3-distutils && \
-#                       apt-get install -y build-essential && \
-#                       mvn -version && \
-#                       mvn clean install \
-#                           -Prelease-seata \
-#                           -DskipTests \
-#                           -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+  build_arm64-binary:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'snapshot' || github.ref_name == '2.x') }}
+    strategy:
+      fail-fast: false
+    steps:
+      # step 1
+      - name: "Checkout"
+        uses: actions/checkout@v3
+      # step 2
+      - name: "Set up QEMU"
+        id: qemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+      # step 3
+      - name: "Build with Maven on 'arm64v8/ubuntu:20.04' OS (Skip tests)"
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws \
+            --platform linux/arm64 arm64v8/ubuntu:20.04 \
+            bash -exc 'apt-get update -y && \
+                       apt-get install maven -y && \
+                       apt-get install -y python3 python3-pip python3-distutils && \
+                       apt-get install -y build-essential && \
+                       mvn -version && \
+                       mvn clean install \
+                           -Prelease-seata \
+                           -DskipTests \
+                           -e -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
